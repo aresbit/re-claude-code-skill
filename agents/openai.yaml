@@ -1,0 +1,4 @@
+interface:
+  display_name: "RE Claude Code"
+  short_description: "Extract and diff Claude Code release bundles."
+  default_prompt: "Use $re-claude-code-skill to unpack a Claude Code release, extract the fallback bundle, compare it with a local baseline, and split commands, hooks, and remote-control code into reusable chunks."
