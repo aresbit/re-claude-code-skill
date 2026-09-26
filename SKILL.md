@@ -13,8 +13,8 @@ Use this skill to turn a Claude Code npm release into readable artifacts and a r
 2. Unpack the wrapper package and the platform package separately.
 3. Inspect the wrapper `package.json` first to confirm which optional platform dependency is actually used.
 4. Treat the platform executable as the main target. First look for an embedded fallback JavaScript bundle before assuming bytecode-only packaging.
-5. Extract the biggest printable region that contains the Bun bytecode marker `// @bun @bytecode @bun-cjs`.
-6. Save the extracted bundle and a metadata file with start offset, length, hash, and duplicate offsets.
+5. Extract the source payload. Try the per-chunk banner `// @bun @bytecode\n// Claude Code is a Beta product` first (2.x packing: many banners forming one contiguous region); fall back to the largest printable region containing the combined marker `// @bun @bytecode @bun-cjs` (legacy single-bundle packing). The combined marker alone is not proof: it also occurs in Bun's own internal string table, where its printable run is short.
+6. Save the extracted bundle and a metadata file with start offset, length, hash, duplicate offsets, mode, and chunk count.
 7. Compare the dumped bundle with a local baseline such as `opencc/dist/cli.js`.
 8. If source path comments are stripped, split the bundle by semantic anchors instead of file-path markers.
 
@@ -23,6 +23,7 @@ Use this skill to turn a Claude Code npm release into readable artifacts and a r
 - Prefer `npm pack` over ad hoc registry downloads so the exact published tarball is preserved.
 - Keep the wrapper package and the platform package in separate directories. The wrapper is useful for dependency resolution; the platform package contains the real payload.
 - Expect duplicate embedded bundle copies in the native executable. Record all duplicate offsets instead of assuming a single copy.
+- Verify a candidate region before trusting it: the 2.x payload should start with the banner, read as valid UTF-8 almost end to end, and report a plausible version string. A near-zero printable yield or a header that appears exactly once deep inside the file points at Bun's string table rather than at the bundle.
 - Favor static extraction first. Only move to runtime hooking when the fallback source is absent or too incomplete.
 - When diffing against `opencc`, treat automated token extraction as a noisy first pass. Use it for triage, then validate conclusions against concrete command names, hook schemas, and Remote Control strings.
 - If `// src/...` path comments are unavailable, split by stable semantic anchors such as command registration strings, hook event literals, exported executor names, and Remote Control UX text.
